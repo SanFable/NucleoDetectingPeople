@@ -10,7 +10,7 @@
 //#endif
 
  
-static VL53L1X *sensor = NULL;
+static VL53L1X *sensor[5] = {NULL};
 //Serial pc(SERIAL_TX, SERIAL_RX);
  
 /* flags that handle interrupt request for sensor and user blue button*/
@@ -19,10 +19,10 @@ volatile bool int_stop = false;
  
  
 /* ISR callback function of the sensor */
-void sensor_irq(void)
+void sens1(void)
 {
     int_sensor = true;
-    sensor->disable_interrupt_measure_detection_irq();
+    sensor[0]->disable_interrupt_measure_detection_irq();
 }
  
 /* ISR callback function of the user blue button to switch measuring sensor. */
@@ -32,17 +32,17 @@ void measuring_stop_irq(void)
 }
  
 /* Start the sensor ranging */
-int start_ranging()
+int start_ranging(int sensor_id)
 {
     int status = 0;
     /* start the measure on the sensor */
-    if (NULL != sensor) {
-        status = sensor->stop_measurement();
+    if (NULL != sensor[sensor_id]) {
+        status = sensor[sensor_id]->stop_measurement();
         if (status != 0) {
                 return status;
         }
  
-        status = sensor->start_measurement(&sensor_irq);
+        status = sensor[sensor_id]->start_measurement(&sens1);
         if (status != 0) {
             return status;
         }
@@ -50,7 +50,7 @@ int start_ranging()
     return status;
 }
  
-int range_measure(VL53L1X_DevI2C *device_i2c)
+int range_measure(VL53L1X_DevI2C *device_i2c, int sensor_id)
 {
     int status = 0;
     uint16_t distance = 0;
@@ -58,32 +58,32 @@ int range_measure(VL53L1X_DevI2C *device_i2c)
     DigitalOut xshutdown(PB_4);
  
     /* create instance of sensor class */
-    sensor = new VL53L1X(device_i2c, &xshutdown, PA_3);
+    sensor[sensor_id] = new VL53L1X(device_i2c, &xshutdown, PA_3);
  
-    sensor->vl53l1_off();
+    sensor[sensor_id]->vl53l1_off();
     /* initialise sensor */
-    sensor->init_sensor(0x52);
+    sensor[sensor_id]->init_sensor(0x52);
  
     if (status) {
-        delete sensor;
-        sensor= NULL;
+        delete sensor[sensor_id];
+        sensor[sensor_id]= NULL;
         printf("Sensor centre not present\n\r");
     }
  
     /* init an array with chars to id the sensors */
-    status = start_ranging();
+    status = start_ranging(sensor_id);
     if (status != 0) {
         printf("Failed to start ranging!\r\n");
         return status;
     }
  
-    if (NULL != sensor) {
+    if (NULL != sensor[sensor_id]) {
         printf("Entering loop mode\r\n");
         /* Main ranging interrupt loop */
         while (true) {
             if (int_sensor) {
                 int_sensor = false;
-                status = sensor->handle_irq(&distance);
+                status = sensor[sensor_id]->handle_irq(&distance);
                 printf("distance: %d\r\n", distance);
             }
  
@@ -97,6 +97,8 @@ int range_measure(VL53L1X_DevI2C *device_i2c)
     return status;
  
 }
+
+
  
 /*=================================== Main ==================================
 =============================================================================*/
@@ -105,7 +107,8 @@ int main()
     //stop_button.rise(&measuring_stop_irq);
     
     VL53L1X_DevI2C *device_i2c = new VL53L1X_DevI2C(VL53L1_I2C_SDA, VL53L1_I2C_SCL);
-    range_measure(device_i2c);  // start continuous measures
+
+    range_measure(device_i2c, 0);  // start continuous measures
     
     return 0;
 }
