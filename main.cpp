@@ -32,7 +32,7 @@ int main()
     checkaddrs();
     uint32_t piData[5] = {NULL};
     uint8_t isDataReady[5] = {0};
-    DigitalOut xshutdown[2]{PB_4,PB_5};
+    DigitalOut xshutdown[8]{D12,D11,D10,D9,D8,D7,D6,D5};
     sensor[0] = new VL53L1X(device_i2c, &xshutdown[0], PA_3);
     sensor[1] = new VL53L1X(device_i2c, &xshutdown[1], PA_3);
 
