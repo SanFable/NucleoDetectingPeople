@@ -33,8 +33,6 @@ private:
     DigitalIn interrupt;
     uint8_t sensorAdress;   
     uint16_t timingBudgetInMs;
-    VL53L1X oSensor(VL53L1X_DevI2C*, DigitalOut, DigitalIn);
 
-    
-    
+    VL53L1X oSensor(VL53L1X_DevI2C*, DigitalOut, DigitalIn); 
 };
