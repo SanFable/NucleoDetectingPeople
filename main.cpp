@@ -2,6 +2,9 @@
 #include "mbed.h"
 #include "VL53L1X_I2C.h"
 #include "VL53L1X_Class.h"
+#include "CSensorBase.h"
+#include "CSensorVL53L1X.h"
+#include "CSensorManager.h"
 #define VL53L1_I2C_SDA   PA_10
 #define VL53L1_I2C_SCL   PA_9
 
@@ -25,34 +28,19 @@ int main()
 {
 
     
-
-    static VL53L1X *sensor[5] = {NULL};
+    CSensorManager oSensorManager;
     uint16_t TimingBudgetInMs = 15;
     printf("before init\n");
     checkaddrs();
     uint32_t piData[5] = {NULL};
     uint8_t isDataReady[5] = {0};
     DigitalOut xshutdown[8]{D12,D11,D10,D9,D8,D7,D6,D5};
-    sensor[0] = new VL53L1X(device_i2c, &xshutdown[0], PA_3);
-    sensor[1] = new VL53L1X(device_i2c, &xshutdown[1], PA_3);
 
-	sensor[0]->init_sensor(0x54);
-    sensor[1]->init_sensor(0x56);
+    oSensorManager.Init();
+
 
     printf("after init\n");
     checkaddrs();
-    
-
-    sensor[0]->vl53l1x_set_timing_budget_in_ms(TimingBudgetInMs);
-	sensor[0]->vl53l1x_set_inter_measurement_in_ms(TimingBudgetInMs);
-    sensor[0]->vl53l1x_set_distance_mode(1);
-    sensor[0]->vl53l1x_start_ranging();
-    
-    sensor[1]->vl53l1x_set_timing_budget_in_ms(TimingBudgetInMs);
-	sensor[1]->vl53l1x_set_inter_measurement_in_ms(TimingBudgetInMs);
-    sensor[1]->vl53l1x_set_distance_mode(1);
-    sensor[1]->vl53l1x_start_ranging();  
-    
 
 while(1){
 if (!isDataReady[0]){ 
