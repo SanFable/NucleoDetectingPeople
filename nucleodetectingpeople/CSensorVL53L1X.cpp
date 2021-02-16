@@ -1,8 +1,31 @@
 #include "mbed.h"
+#include "VL53L1X_I2C.h"
+#include "VL53L1X_Class.h"
 #include "CSensorVL53L1X.h"
 
+    CSensorVL53L1X::CSensorVL53L1X(VL53L1X_DevI2C *device_i2c, DigitalOut *xshutdown, PinName interrupt, uint8_t sensorAdress) : m_oSensor(device_i2c, xshutdown, interrupt, sensorAdress)
+    {
+        mDevice_i2c = device_i2c;
+        mXshutdown = xshutdown;
+        mInterrupt = interrupt;
+        mSensorAdress = sensorAdress;
+        m_oSensor = VL53L1X(mDevice_i2c, mXshutdown, mInterrupt, mSensorAdress);
+        
+    }
 
-    int defineSensor(VL53L1X_DevI2C *mDevice_i2c, DigitalOut *mXshutdown, PinName mInterrupt, uint8_t mSensorAdress, uint16_t mTimingBudgetInMs)
+ int CSensorVL53L1X::Init()
+    {
+        
+        m_oSensor.init_sensor(mSensorAdress);
+        m_oSensor.vl53l1x_set_timing_budget_in_ms(mTimingBudgetInMs);
+	    m_oSensor.vl53l1x_set_inter_measurement_in_ms(mTimingBudgetInMs);
+        m_oSensor.vl53l1x_set_distance_mode(1);
+        m_oSensor.vl53l1x_start_ranging();
+        return 0;
+    }
+    
+
+/*int defineSensor(VL53L1X_DevI2C *mDevice_i2c, DigitalOut *mXshutdown, PinName mInterrupt, uint8_t mSensorAdress, uint16_t mTimingBudgetInMs)
     {
        mDevice_i2c = mDevice_i2c;
        mXshutdown = new DigitalOut(*mXshutdown);
@@ -10,10 +33,4 @@
        mSensorAdress = mSensorAdress;
        mTimingBudgetInMs = mTimingBudgetInMs;
        return 0;
-    }
-
-
-    
-
-
-    int GetData();
+    }*/
