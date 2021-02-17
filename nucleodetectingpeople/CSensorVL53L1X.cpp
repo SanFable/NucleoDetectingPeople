@@ -12,6 +12,8 @@
         m_oSensor = VL53L1X(mDevice_i2c, mXshutdown, mInterrupt, mSensorAdress);
         
     }
+    
+CSensorVL53L1X::~CSensorVL53L1X() {}
 
  int CSensorVL53L1X::Init()
     {
@@ -24,6 +26,20 @@
         return 0;
     }
     
+void CSensorVL53L1X::getData(){
+    uint32_t piData = NULL;
+    uint8_t isDataReady = 1;
+
+    while(isDataReady){
+    m_oSensor.vl53l1x_check_for_data_ready(&isDataReady);
+    printf("waiting\n");
+}
+    m_oSensor.get_distance(&piData);
+printf("dist: %d \n", piData);
+    m_oSensor.vl53l1x_clear_interrupt();
+}
+
+
 
 /*int defineSensor(VL53L1X_DevI2C *mDevice_i2c, DigitalOut *mXshutdown, PinName mInterrupt, uint8_t mSensorAdress, uint16_t mTimingBudgetInMs)
     {

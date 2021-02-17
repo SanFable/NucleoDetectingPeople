@@ -1,9 +1,19 @@
 #include "mbed.h"
-#include "CSensorVL53L1X.h"
+#include "CSensorManager.h"
 
-
-    int Init(VL53L1X_DevI2C *mDevice_i2c, DigitalOut mXshutdown, PinName mInterrupt, uint8_t mSensorAdress, uint16_t mTimingBudgetInMs)
+CSensorManager::CSensorManager() {}
+CSensorManager::~CSensorManager() {}
+ 
+    int CSensorManager::initSensors()
     {
-        oSensorVector.add(CSensorVL53L1X(mDevice_i2c, &mXshutdown, PA_3, 0x52,15));
-        oSensorVector.add(CSensorVL53L1X(mDevice_i2c, &mXshutdown, PA_3));
+        oSensorVector.push_back(CSensorVL53L1X(device_i2c, &xshutdown, interrupt, sensorAdress));
+        oSensorVector[0].Init();
+        
+        
+        //oSensorVector->push_back(CSensorVL53L1X(*device_i2c, *xshutdown, interrupt, sensorAdress, mTimingBudgetInMs));
+        return 0;
+    }
+
+    void CSensorManager::ReadFromSensors(){
+        oSensorVector[0].getData();
     }
