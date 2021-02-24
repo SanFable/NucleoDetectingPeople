@@ -14,8 +14,8 @@ class CSensorVL53L1X
     PinName mInterrupt;
     uint8_t mSensorAdress;   
     uint16_t mTimingBudgetInMs;
-    int Init();
-    void getData();
+    void Init(VL53L1X m_oSensor);
+    void getData(VL53L1X m_oSensor);
 
     private:
 

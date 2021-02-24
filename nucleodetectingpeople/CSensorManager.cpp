@@ -7,7 +7,7 @@ CSensorManager::~CSensorManager() {}
     int CSensorManager::initSensors()
     {
         oSensorVector.push_back(CSensorVL53L1X(device_i2c, &xshutdown, interrupt, sensorAdress));
-        oSensorVector[0].Init();
+        oSensorVector[0].Init(VL53L1X(device_i2c, &xshutdown, interrupt));
         
         
         //oSensorVector->push_back(CSensorVL53L1X(*device_i2c, *xshutdown, interrupt, sensorAdress, mTimingBudgetInMs));
@@ -15,5 +15,5 @@ CSensorManager::~CSensorManager() {}
     }
 
     void CSensorManager::ReadFromSensors(){
-        oSensorVector[0].getData();
+        oSensorVector[0].getData(VL53L1X(device_i2c, &xshutdown, interrupt));
     }

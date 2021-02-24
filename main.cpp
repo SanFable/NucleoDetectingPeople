@@ -9,9 +9,10 @@ int main()
 
 
 CSensorManager oManager = CSensorManager();
-printf("lol\n");
-oManager.initSensors();
-oManager.ReadFromSensors();
 
+oManager.initSensors();
+while(1){
+oManager.ReadFromSensors();
+}
     
 }

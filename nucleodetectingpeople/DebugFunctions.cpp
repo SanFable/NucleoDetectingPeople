@@ -1,7 +1,8 @@
 #include "mbed.h"
 #include "DebugFunctions.h"
-
- void checkaddrs(){
+DebugFunctions::DebugFunctions() {}
+DebugFunctions::~DebugFunctions() {}
+ void DebugFunctions::checkaddrs(){
      I2C i2c(PA_10, PA_9); 
      int error, address;
      for(address = 0; address < 128; address++ ){
