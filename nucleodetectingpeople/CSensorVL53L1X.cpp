@@ -3,19 +3,21 @@
 #include "VL53L1X_Class.h"
 #include "CSensorVL53L1X.h"
 #include "DebugFunctions.h"
-    CSensorVL53L1X::CSensorVL53L1X(VL53L1X_DevI2C *device_i2c, DigitalOut *xshutdown, PinName interrupt, uint8_t sensorAdress) : m_oSensor(device_i2c, xshutdown, interrupt)
+    CSensorVL53L1X::CSensorVL53L1X(VL53L1X_DevI2C *device_i2c, DigitalOut *xshutdown, PinName interrupt, uint8_t sensorAdress) :
+                     m_oSensor(device_i2c, xshutdown, interrupt), 
+                     mXshutdown(xshutdown),
+                     mInterrupt(interrupt),
+                     mSensorAdress(sensorAdress),
+                     mDevice_i2c(device_i2c)
     {
-        mDevice_i2c = device_i2c;
-        mXshutdown = xshutdown;
-        mInterrupt = interrupt;
-        mSensorAdress = sensorAdress;
-        m_oSensor = VL53L1X(mDevice_i2c, mXshutdown, mInterrupt);
+
+        //m_oSensor = VL53L1X(mDevice_i2c, mXshutdown, mInterrupt);
         
     }
     
 CSensorVL53L1X::~CSensorVL53L1X() {}
 
- void CSensorVL53L1X::Init(VL53L1X m_oSensor)
+ void CSensorVL53L1X::Init()
     {
         VL53L1X_ERROR status = 0;
         status = m_oSensor.init_sensor(mSensorAdress);
@@ -32,7 +34,7 @@ CSensorVL53L1X::~CSensorVL53L1X() {}
         //showi2css.checkaddrs();
     }
     
-void CSensorVL53L1X::getData(VL53L1X m_oSensor){
+void CSensorVL53L1X::getData(){
     VL53L1X_ERROR status = 0;
     uint32_t piData = NULL;
     uint8_t isDataReady = 1;
