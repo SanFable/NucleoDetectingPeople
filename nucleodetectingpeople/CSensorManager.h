@@ -9,7 +9,7 @@ class CSensorManager
 public:
     CSensorManager();
     ~CSensorManager();
-    int initSensors();
+    void initSensors();
     void ReadFromSensors();
     vector<CSensorVL53L1X> oSensorVector;
 

@@ -21,17 +21,13 @@ CSensorVL53L1X::~CSensorVL53L1X() {}
     {
         VL53L1X_ERROR status = 0;
         status = m_oSensor.init_sensor(mSensorAdress);
-        printf("after %d init\n", status);
-        status = m_oSensor.vl53l1x_set_distance_mode(1);
-        printf("after dist %d\n", status);
-        status = m_oSensor.vl53l1x_set_timing_budget_in_ms(50);
-        printf("after %d budget\n", status);
-	    status = m_oSensor.vl53l1x_set_inter_measurement_in_ms(50);
-        printf("after inter %d\n", status);
+        //status = m_oSensor.vl53l1x_set_distance_mode(1);
+        //status = m_oSensor.vl53l1x_set_timing_budget_in_ms(20);
+	    //status = m_oSensor.vl53l1x_set_inter_measurement_in_ms(20);
         status = m_oSensor.vl53l1x_start_ranging();
-        printf("after all %d\n", status);
+        printf("after whole init %d\n", status);
        //DebugFunctions showi2css = DebugFunctions();   
-        //showi2css.checkaddrs();
+       // showi2css.checkaddrs();
     }
     
 void CSensorVL53L1X::getData(){
@@ -41,12 +37,17 @@ void CSensorVL53L1X::getData(){
 
     while(isDataReady){
     status = m_oSensor.vl53l1x_check_for_data_ready(&isDataReady);
-    printf("waiting\n");
+    printf("waiting %d\n", status);
+    printf("data ready: %d\n", isDataReady);
     wait_us(1000000);
+    
 }
     status = m_oSensor.get_distance(&piData);
+     printf("po dist %d\n", status);
 printf("dist: %d \n", piData);
     status = m_oSensor.vl53l1x_clear_interrupt();
+     printf("po interrupt %d\n", status);
+     
 }
 
 
