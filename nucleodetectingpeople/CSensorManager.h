@@ -20,7 +20,7 @@ public:
     DigitalOut xshutdown = PB_4;
     PinName interrupt = PA_3;
     uint8_t sensorAdress = 0x52;
-    uint16_t mTimingBudgetInMs = 50;
+    uint16_t mTimingBudgetInMs = 20;
 //private:
     
 

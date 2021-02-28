@@ -11,8 +11,9 @@ int main()
 CSensorManager oManager = CSensorManager();
 
 oManager.initSensors();
-while(1){
+wait_us(100000);
+
 oManager.ReadFromSensors();
-}
+
     
 }
