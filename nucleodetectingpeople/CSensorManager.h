@@ -11,7 +11,8 @@ public:
     ~CSensorManager();
     void initSensors();
     void ReadFromSensors();
-    vector<CSensorVL53L1X> oSensorVector;
+    volatile vector<CSensorVL53L1X> oSensorVector;
+    
 
 //to be moved out...
 #define VL53L1_I2C_SDA   PA_10

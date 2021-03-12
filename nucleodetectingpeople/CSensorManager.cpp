@@ -3,15 +3,15 @@
 
 CSensorManager::CSensorManager() {
 
-    oSensorVector.push_back(CSensorVL53L1X(device_i2c, &xshutdown, interrupt, sensorAdress));
+    
 }
 CSensorManager::~CSensorManager() {}
  
     void CSensorManager::initSensors()
     {
-        
+        oSensorVector.push_back(CSensorVL53L1X(device_i2c, &xshutdown, interrupt, sensorAdress));
         oSensorVector[0].Init();
-        
+         oSensorVector[0].getData();
         
         //oSensorVector->push_back(CSensorVL53L1X(*device_i2c, *xshutdown, interrupt, sensorAdress, mTimingBudgetInMs));
 
