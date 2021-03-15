@@ -18,7 +18,7 @@ int timingBudgetInMs;
 int distanceMode;
 uint8_t sensorAdress;
 VL53L1X *obj;
-
+uint8_t isDataReady;
 };
 
 Sensor sensors[10];
