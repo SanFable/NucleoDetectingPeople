@@ -8,6 +8,7 @@
 #define VL53L1_I2C_SCL   PA_9
 VL53L1X_DevI2C *device_i2c = new VL53L1X_DevI2C(VL53L1_I2C_SDA, VL53L1_I2C_SCL);
 const uint8_t numberOfSensors = 8;
+Timer t;
 struct Sensor{
 DigitalOut *xshutdown;
 PinName interrupt;
@@ -16,7 +17,11 @@ uint8_t sensorAdress;
 VL53L1X *obj;
 uint32_t tempData;
 uint8_t isDataReady;
-vector<uint16_t> sensorData;
+uint16_t sensorData[2][1000]{0};
+uint32_t timestampData[2][100]{0};
+uint8_t whichArray = 0;
+uint16_t numofData = 0;
+
 };
 Sensor sensors[numberOfSensors];
 Thread thread[numberOfSensors];
@@ -45,7 +50,7 @@ uint8_t shortDistanceMode = 1;
 void getROIData( int *i){
 uint8_t zoneMeasured = 0;
     while (1){
-        sensors[*i].obj->VL53L1X_SetROICenter(roiArray[zoneMeasured]); //cos z tym rozmiarem bo to jest rozmiar a nie gdzie
+        sensors[*i].obj->VL53L1X_SetROICenter(roiArray[zoneMeasured]); 
         wait_us(10000);
         while (!sensors[*i].isDataReady){ 
             sensors[*i].obj->vl53l1x_check_for_data_ready(&sensors[*i].isDataReady);
@@ -53,14 +58,31 @@ uint8_t zoneMeasured = 0;
         }
     sensors[*i].isDataReady = 0;
     sensors[*i].obj->get_distance(&sensors[*i].tempData);
-    printf("\nsens %d: %d zone: %d\n", *i, sensors[*i].tempData, zoneMeasured);
+    //printf("sens %d: %d zone: %d\n", *i, sensors[*i].tempData, zoneMeasured);
+    
+    sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData] = sensors[*i].tempData;
+    printf("array %d val %d index %d\n", sensors[*i].whichArray, sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData], sensors[*i].numofData);
+    //sensors[*i].timestampData[sensors[*i].whichArray][sensors[*i].numofData] = (duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count());
+       // printf("     The time taken was %llu milliseconds\n", duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count());
+  
     //sensors[*i].sensorData.push_back(sensors[*i].tempData);
     //printf("sens %d dist: %d size: %d\n", *i, sensors[*i].tempData, sensors[*i].sensorData.size());
     sensors[*i].obj->vl53l1x_clear_interrupt();
     
     zoneMeasured++;
+    sensors[*i].numofData++;
     if (zoneMeasured==6)
         zoneMeasured = 0;
+
+    if (sensors[*i].numofData == 1000)
+        {
+            sensors[*i].numofData = 0;
+            if(sensors[*i].whichArray == 0)
+                sensors[*i].whichArray = 1;
+
+            else if(sensors[*i].whichArray == 1)
+                    sensors[*i].whichArray = 0;
+        }
     //wait_us(100000);
     }
 }
@@ -84,6 +106,7 @@ sensors[i].obj->vl53l1x_start_ranging();
 
 int main()
 {
+t.start();
 
     
 
@@ -91,12 +114,13 @@ int main()
  
     printf("before init\n");
     preInitSensors();
-    wait_us(10000);
+    wait_us(10000); 
     initSingleSensor(sensorNumber[0]);
     wait_us(10000);
-  //  initSingleSensor(sensorNumber[7]);
+  // initSingleSensor(sensorNumber[3]);
     checkaddrs();
+    
 thread[sensorNumber[0]].start(callback(getROIData,&sensorNumber[0]));
-//thread[sensorNumber[7]].start(callback(getROIData,&sensorNumber[7]));
+//thread[sensorNumber[3]].start(callback(getROIData,&sensorNumber[3]));
 
 }
