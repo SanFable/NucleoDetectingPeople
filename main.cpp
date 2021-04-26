@@ -33,6 +33,8 @@ uint16_t numofData = 0;
 
 SDBlockDevice   blockDevice(PB_15, PB_14, PI_1, PA_8);  // mosi, miso, sck, cs
 FATFileSystem   fileSystem("fs");
+FILE*   f;
+char fileName[10];
 Sensor sensors[numberOfSensors];
 Thread thread[numberOfSensors];
 Thread handleSD;
@@ -81,7 +83,7 @@ uint8_t zoneMeasured = 0;
         sprintf((char*)text[*i], "dist: %d", sensors[*i].tempData);
         BSP_LCD_DisplayStringAt(0, 90, (uint8_t *)&text[*i], RIGHT_MODE); }
 
-    ThisThread::sleep_for(50ms);
+    ThisThread::sleep_for(10ms);
     sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData] = sensors[*i].tempData;
     //printf("array %d val %d index %d\n", sensors[*i].whichArray, sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData], sensors[*i].numofData);
     sensors[*i].timestampData[sensors[*i].whichArray][sensors[*i].numofData] = (duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count());
@@ -119,113 +121,38 @@ for (uint8_t i = 0;i<numberOfSensors;i++){
 }
 }
 
+void mountSDCard(){
+    printf("Mounting the filesystem... ");
+    fflush(stdout);
+    fileSystem.mount(&blockDevice);
+}
+
+
 void SaveToSD(int arrayNumber, int sensorNum){
-// to be fixed, not working https://pastebin.com/ELC0xZ2D?fbclid=IwAR11s8d0CJJjr92JyfcjjN4ijSGyIBvdspw5xam4VJXA4PKULnvLORB5IKA
-
-
-printf("Mounting the filesystem... ");
-    fflush(stdout);
- 
-    int err = fileSystem.mount(&blockDevice);
-    printf("%s\n", (err ? "Fail :(" : "OK"));
-    if (err) {
-        // Reformat if we can't mount the filesystem
-        // this should only happen on the first boot
-        printf("No filesystem found, formatting... ");
-        fflush(stdout);
-        err = fileSystem.reformat(&blockDevice);
-        printf("%s\n", (err ? "Fail :(" : "OK"));
-        if (err) {
-            error("error: %s (%d)\n", strerror(-err), err);
-        }
-    }
- 
-    // Open the hehe file
-    printf("Opening \"/fs/hehe.txt\"... ");
-    fflush(stdout);
- 
-    FILE*   f = fopen("/fs/hehe.txt", "r+");
-    printf("%s\n", (!f ? "Fail :(" : "OK"));
-    if (!f) {
-        // Create the hehe file if it doesn't exist
-        printf("No file found, creating a new file... ");
-        fflush(stdout);
-        f = fopen("/fs/hehe.txt", "w+");
-        printf("%s\n", (!f ? "Fail :(" : "OK"));
-        if (!f) {
-            error("error: %s (%d)\n", strerror(errno), -errno);
-        }
- 
+printf("arraynum %d sensnum %d\n", arrayNumber, sensorNum);
+fflush(stdout);
+    
+    sprintf(fileName, "/fs/%d.txt", sensorNum);
+    f = fopen(fileName, "a");
+ int err = 0;
         for (int i = 0; i < 1000; i++) {
-            printf("\rWriting hehe (%d/%d)... ", i, 1000);
             fflush(stdout);
-            err = fprintf(f, "%d,%d\n", sensors[sensorNum].timestampData[arrayNumber][i], sensors[sensorNum].sensorData[arrayNumber][i]);
+            err = fprintf(f,"%d,%d\n", sensors[sensorNum].timestampData[arrayNumber][i], sensors[sensorNum].sensorData[arrayNumber][i]);
             if (err < 0) {
-                printf("Fail :(\n");
-                error("error: %s (%d)\n", strerror(errno), -errno);
+                printf("saveFailed\n");
             }
-        }
  
-        printf("\rWriting hehe (%d/%d)... OK\n", 1000, 1000);
- 
-        printf("Seeking file... ");
-        fflush(stdout);
-        err = fseek(f, 0, SEEK_SET);
-        printf("%s\n", (err < 0 ? "Fail :(" : "OK"));
-        if (err < 0) {
-            error("error: %s (%d)\n", strerror(errno), -errno);
-        }
     }
-  
-    // Close the file which also flushes any cached writes
-    printf("Closing \"/fs/hehe.txt\"... ");
+
+    printf("Closing \"/fs/%d.txt\"\n",sensorNum);
     fflush(stdout);
-    err = fclose(f);
-    printf("%s\n", (err < 0 ? "Fail :(" : "OK"));
-    if (err < 0) {
-        error("error: %s (%d)\n", strerror(errno), -errno);
+    if (fclose(f)) {
+        printf("closingFail\n");
     }
- 
- 
-    // Tidy up
-    printf("Unmounting... ");
-    fflush(stdout);
-    err = fileSystem.unmount();
-    printf("%s\n", (err < 0 ? "Fail :(" : "OK"));
-    if (err < 0) {
-        error("error: %s (%d)\n", strerror(-err), err);
-    }
- 
-    printf("Initializing the block device... ");
-    fflush(stdout);
- 
-    err = blockDevice.init();
-    printf("%s\n", (err ? "Fail :(" : "OK"));
-    if (err) {
-        error("error: %s (%d)\n", strerror(-err), err);
-    }
- 
-    printf("Erasing the block device... ");
-    fflush(stdout);
-    err = blockDevice.erase(0, blockDevice.size());
-    printf("%s\n", (err ? "Fail :(" : "OK"));
-    if (err) {
-        error("error: %s (%d)\n", strerror(-err), err);
-    }
- 
-    printf("Deinitializing the block device... ");
-    fflush(stdout);
-    err = blockDevice.deinit();
-    printf("%s\n", (err ? "Fail :(" : "OK"));
-    if (err) {
-        error("error: %s (%d)\n", strerror(-err), err);
-    }
- 
-    printf("\r\n");
- 
-    printf("Mbed OS filesystem example done!\n");
 
 
+
+// to be fixed, not working https://pastebin.com/ELC0xZ2D?fbclid=IwAR11s8d0CJJjr92JyfcjjN4ijSGyIBvdspw5xam4VJXA4PKULnvLORB5IKA
 }
 
 
@@ -233,16 +160,15 @@ void checkForSDWrite(){
     uint8_t lastWhichArray[8] ={sensors[0].whichArray, sensors[1].whichArray, sensors[2].whichArray, sensors[3].whichArray, 
                                 sensors[4].whichArray, sensors[5].whichArray, sensors[6].whichArray, sensors[7].whichArray};
     while(1){
-        
-        for (int i = 0; i<numberOfSensors; i++){
-            printf("checking for write\n");
+        printf("checking for write\n");
+        for (int i = 0; i<numberOfSensors; i++){           
             if (lastWhichArray[i] != sensors[i].whichArray){
                 SaveToSD(lastWhichArray[i], i);
                 lastWhichArray[i] = sensors[i].whichArray;
             }
-        ThisThread::sleep_for(3s);
+        
         }
-
+ThisThread::sleep_for(3s);
     }
 
 }
@@ -285,7 +211,8 @@ BSP_LCD_Init();
     //initSingleSensor(sensorNumber[b]);
 
 checkaddrs();
-    
+mountSDCard();
+    //SaveToSD(1,1);
 thread[sensorNumber[a]].start(callback(getROIData,&sensorNumber[a]));
 //thread[sensorNumber[b]].start(callback(getROIData,&sensorNumber[b]));
 
