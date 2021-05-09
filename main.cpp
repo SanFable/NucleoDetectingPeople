@@ -76,140 +76,167 @@ uint8_t text[numberOfSensors][30];
     }
  }
 
-void getROIData( int *i){
-    int eh =0;
-uint8_t zoneMeasured = 0;
-    while (1){
-        sensors[*i].obj->VL53L1X_SetROICenter(roiArray[zoneMeasured]); 
-        //wait_us(20000);
+void getROIData(int* i)
+{
+    int eh = 0;
+    uint8_t zoneMeasured = 0;
+    while (1)
+    {
+        sensors[*i].obj->VL53L1X_SetROICenter(roiArray[zoneMeasured]);
+        // wait_us(20000);
         ThisThread::sleep_for(25ms);
-        while (!sensors[*i].isDataReady){ 
+        while (!sensors[*i].isDataReady)
+        {
             sensors[*i].obj->vl53l1x_check_for_data_ready(&sensors[*i].isDataReady);
             eh++;
         }
         if (eh != 1)
-            printf("%d  %d\n",*i, eh);
-        eh =0;
-    sensors[*i].isDataReady = 0;
-    sensors[*i].obj->get_distance(&sensors[*i].tempData);
-    //printf("sens %d: %d zone: %d\n", *i, sensors[*i].tempData, zoneMeasured);
-    //
-    /*
-    if(*i % 2 == 0) {
-        sprintf((char*)text[*i], "dist: %d", sensors[*i].tempData);
-        BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)&text[*i], RIGHT_MODE); }
-    if(*i % 2 == 1)
-    {
-        sprintf((char*)text[*i], "dist: %d", sensors[*i].tempData);
-        BSP_LCD_DisplayStringAt(0, 90, (uint8_t *)&text[*i], RIGHT_MODE); }
-*/
-    sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData] = sensors[*i].tempData;
-    sensors[*i].timestampData[sensors[*i].whichArray][sensors[*i].numofData] = (duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count());
-    sensors[*i].obj->vl53l1x_clear_interrupt();
-    
-    zoneMeasured++;
-    sensors[*i].numofData++;
-    if (zoneMeasured==6)
-    {
-        for (int j=0;j<6;j++){
-            if(sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-j] < 500){
-                sensors[*i].dist50cm++;
+            printf("%d  %d\n", *i, eh);
+        eh = 0;
+        sensors[*i].isDataReady = 0;
+        sensors[*i].obj->get_distance(&sensors[*i].tempData);
+        sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData]
+            = sensors[*i].tempData;
+        sensors[*i].timestampData[sensors[*i].whichArray][sensors[*i].numofData]
+            = (duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count());
+        sensors[*i].obj->vl53l1x_clear_interrupt();
+
+        zoneMeasured++;
+        sensors[*i].numofData++;
+        if (zoneMeasured == 6)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                if (sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData - j] < 500)
+                {
+                    sensors[*i].dist50cm++;
+                }
+                if (sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData - j] < 1000)
+                {
+                    sensors[*i].dist100cm++;
+                }
+                if (sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData - j] < 1500)
+                {
+                    sensors[*i].dist150cm++;
+                }
             }
-            if(sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-j] < 1000){
-                sensors[*i].dist100cm++;
-            }
-            if(sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-j] < 1500){
-                sensors[*i].dist150cm++;
-            }
-        }
-           if (sensors[*i].dist50cm >= 4 )
+            if (sensors[*i].dist50cm >= 4)
             {
                 if (sensors[*i].timerRunning[0] == 0)
                 {
-                sensors[*i].internalTimer1.start();
-                sensors[*i].timerRunning[0] = 1;
-                sensors[*i].dist50cm = 0;
+                    sensors[*i].internalTimer1.start();
+                    sensors[*i].timerRunning[0] = 1;
+                    sensors[*i].dist50cm = 0;
                 }
             }
-            else {
-                sensors[*i].dist50cm = 0;
+            else
+            {
+                if (sensors[*i].timerRunning[0] == 1)
+                {
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) <= 1500  && sensors[*i].dist50cm <= 1)
+                    {
+                        sensors[*i].detectedAt50cm++;
+                        sensors[*i].internalTimer1.stop();
+                        sensors[*i].internalTimer1.reset();
+                        sensors[*i].timerRunning[0] = 0;
+                    }
+                    else if ((sensors[*i].timerRunning[0] = 1 && (duration_cast<std::chrono::milliseconds>( sensors[*i].internalTimer1.elapsed_time()).count()) > 1500))
+                    {
+                        sensors[*i].internalTimer1.stop();
+                        sensors[*i].internalTimer1.reset();
+                        sensors[*i].timerRunning[0] = 0;
+                    }
+                }
+                                   
             }
 
-            if (sensors[*i].dist100cm >= 4 )
+            if (sensors[*i].dist100cm >= 4)
             {
                 if (sensors[*i].timerRunning[1] == 0)
                 {
-                sensors[*i].internalTimer2.start();
-                sensors[*i].timerRunning[1] = 1;
-                sensors[*i].dist100cm = 0;
+                    sensors[*i].internalTimer2.start();
+                    sensors[*i].timerRunning[1] = 1;
+                    sensors[*i].dist100cm = 0;
                 }
             }
-            else {
-                sensors[*i].dist100cm = 0;
+            else
+            {
+                if (sensors[*i].timerRunning[1] == 1 )
+                {
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) <= 1500 && sensors[*i].dist100cm <= 1)
+                    {
+                        sensors[*i].detectedAt100cm++;
+                         sensors[*i].internalTimer2.stop();
+                        sensors[*i].internalTimer2.reset();
+                        sensors[*i].timerRunning[1] = 0;
+                    }
+                    else if ((sensors[*i].timerRunning[1] = 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) > 1500))
+                    {
+                        sensors[*i].internalTimer2.stop();
+                        sensors[*i].internalTimer2.reset();
+                        sensors[*i].timerRunning[1] = 0;
+                    }
+                }
+
             }
 
-            if (sensors[*i].dist150cm >= 4 )
+            if (sensors[*i].dist150cm >= 4)
             {
                 if (sensors[*i].timerRunning[2] == 0)
                 {
-                sensors[*i].internalTimer3.start();
-                sensors[*i].timerRunning[2] = 1;
-                sensors[*i].dist150cm = 0;
+                    sensors[*i].internalTimer3.start();
+                    sensors[*i].timerRunning[2] = 1;
+                    sensors[*i].dist150cm = 0;
                 }
             }
-            else {
-                sensors[*i].dist150cm = 0;
-            }            
-
-
-
-
-            if (sensors[*i].timerRunning[0] == 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) > 1500){
-                sensors[*i].internalTimer1.stop();
-                sensors[*i].internalTimer1.reset();
-                sensors[*i].timerRunning[0] = 0;
-                if (sensors[*i].dist50cm == 0){
-                    sensors[*i].detectedAt50cm++;
+            else
+            {
+                if (sensors[*i].timerRunning[2] == 1 )
+                {
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) <= 1500 && sensors[*i].dist150cm <= 1)
+                    {
+                        sensors[*i].detectedAt150cm++;
+                        sensors[*i].internalTimer3.stop();
+                        sensors[*i].internalTimer3.reset();
+                        sensors[*i].timerRunning[2] = 0;
+                    }
+                    else if ((sensors[*i].timerRunning[2] = 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) > 1500))
+                    {
+                        sensors[*i].internalTimer3.stop();
+                        sensors[*i].internalTimer3.reset();
+                        sensors[*i].timerRunning[2] = 0;
+                    }
                 }
+
             }
 
-            if (sensors[*i].timerRunning[1] == 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) > 1500){
-                sensors[*i].internalTimer2.stop();
-                sensors[*i].internalTimer2.reset();
-                sensors[*i].timerRunning[1] = 0;
-                if (sensors[*i].dist100cm == 0){
-                    sensors[*i].detectedAt100cm++;
-                }
-            }
+            sensors[*i].dist50cm = 0;
+            sensors[*i].dist100cm = 0;
+            sensors[*i].dist150cm = 0;
+            zoneMeasured = 0;
 
-            if (sensors[*i].timerRunning[2] == 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) > 1500){
-                sensors[*i].internalTimer3.stop();
-                sensors[*i].internalTimer3.reset();
-                sensors[*i].timerRunning[2] = 0;
-                if (sensors[*i].dist150cm == 0){
-                    sensors[*i].detectedAt150cm++;
-                }
-            }                        
-        
-
-        zoneMeasured = 0;
-
-        //printf("sens: %d numOfData: %d %d  %d  %d  %d  %d  %d\n", *i, sensors[*i].numofData, sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-5], sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-6], sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-4]
-       // , sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-3], sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-2], sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-1]);
-    }
-    if (sensors[*i].numofData == 1000)
+            // printf("sens: %d numOfData: %d %d  %d  %d  %d  %d  %d\n", *i,
+            // sensors[*i].numofData,
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-5],
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-6],
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-4]
+            // ,
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-3],
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-2],
+            // sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-1]);
+        }
+        if (sensors[*i].numofData == 1000)
         {
             sensors[*i].numofData = 0;
-            if(sensors[*i].whichArray == 0)
+            if (sensors[*i].whichArray == 0)
                 sensors[*i].whichArray = 1;
 
-            else if(sensors[*i].whichArray == 1)
-                    sensors[*i].whichArray = 0;
+            else if (sensors[*i].whichArray == 1)
+                sensors[*i].whichArray = 0;
         }
-    //wait_us(100000);
+        // wait_us(100000);
     }
 }
-
 
 void preInitSensors(){
 for (uint8_t i = 0;i<numberOfSensors;i++){
@@ -361,3 +388,4 @@ BSP_LCD_DrawBitmap(0, 0, (uint8_t *)gl_file);
 //thread[sensorNumber[b]].start(callback(getROIData,&sensorNumber[b]));
 
 }
+    
