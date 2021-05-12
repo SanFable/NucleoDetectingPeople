@@ -29,6 +29,7 @@ uint32_t timestampData[2][1000]{0};
 uint8_t whichArray = 0;
 uint16_t numofData = 0;
 
+uint16_t avgSensorData;
 uint16_t dist150cm = 0;
 uint16_t dist100cm = 0;
 uint16_t dist50cm = 0;
@@ -36,12 +37,28 @@ Timer internalTimer1;
 Timer internalTimer2;
 Timer internalTimer3;
 bool timerRunning[3] = {0, 0, 0};
-uint8_t detectedAt50cm = 0;
-uint8_t detectedAt100cm = 0;
-uint8_t detectedAt150cm = 0;
+uint16_t detectedAt50cm = 0;
+uint16_t detectedAt100cm = 0;
+uint16_t detectedAt150cm = 0;
+uint16_t pdetectedAt50cm = 0;
+uint16_t pdetectedAt100cm = 0;
+uint16_t pdetectedAt150cm = 0;
+
 };
 
 
+uint8_t lDetectionFlagAt50cm = 0;
+uint8_t lDetectionFlagAt100cm = 0;
+uint8_t lDetectionFlagAt150cm = 0;
+uint8_t rDetectionFlagAt50cm = 0;
+uint8_t rDetectionFlagAt100cm = 0;
+uint8_t rDetectionFlagAt150cm = 0;
+uint8_t passedLeftAt50 = 0;
+uint8_t passedRightAt50 = 0;
+uint8_t passedLeftAt100 = 0;
+uint8_t passedRightAt100 = 0;
+uint8_t passedLeftAt150 = 0;
+uint8_t passedRightAt150 = 0;
 
 SDBlockDevice   blockDevice(PB_15, PB_14, PI_1, PA_8);  // mosi, miso, sck, cs
 FATFileSystem   fileSystem("fs");
@@ -50,7 +67,9 @@ char fileName[10];
 Sensor sensors[numberOfSensors];
 Thread thread[numberOfSensors];
 Thread handleSD;
-Thread printLCD;
+Thread countPeopleThread;
+Thread printMeasurementsThread;
+
 DigitalOut xshutdown[numberOfSensors]{PC_7, PC_6, PB_4, PG_7, PH_6, PI_3, PI_2, PA_15};
 uint8_t sensorAdress[numberOfSensors]{0x54, 0x56, 0x58, 0x60, 0x62, 0x64, 0x66, 0x68};
 uint8_t roiArray[]{151, 167, 183, 199, 215, 239};
@@ -105,6 +124,13 @@ void getROIData(int* i)
         sensors[*i].numofData++;
         if (zoneMeasured == 6)
         {
+            sensors[*i].avgSensorData = 
+            (sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-6] +
+            sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-5] +
+            sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-4] +
+            sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-3] +
+            sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-2] +
+            sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData-1])/6;
             for (int j = 0; j < 6; j++)
             {
                 if (sensors[*i].sensorData[sensors[*i].whichArray][sensors[*i].numofData - j] < 500)
@@ -319,16 +345,17 @@ sensors[i].obj->vl53l1x_set_roi(roiX,roiY);
 sensors[i].obj->vl53l1x_start_ranging();
 }
 
-void printDetectedPeople(){
-    char cm[10];
+void countPeople(){
+    /*char cm[10];
     int ypos = 15;
     
     BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)"50cm", LEFT_MODE); 
     BSP_LCD_DisplayStringAt(100, 0, (uint8_t *)"100cm", LEFT_MODE); 
     BSP_LCD_DisplayStringAt(200, 0, (uint8_t *)"150cm", LEFT_MODE); 
+    */
 while(1){
     for (int y=0;y<8;y++){
-
+/*
     sprintf((char*)cm, "%d", sensors[y].detectedAt50cm); //detectedat
     BSP_LCD_DisplayStringAt(0, ypos, (uint8_t *)&cm, LEFT_MODE); 
     sprintf((char*)cm, "%d", sensors[y].detectedAt100cm);
@@ -336,17 +363,99 @@ while(1){
     sprintf((char*)cm, "%d", sensors[y].detectedAt150cm);
     BSP_LCD_DisplayStringAt(200, ypos, (uint8_t *)&cm, LEFT_MODE); 
 
-ypos = ypos+15;
+*/
+    if ( y < 4)
+    {
+        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm)
+            lDetectionFlagAt50cm++;
+        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm)
+            lDetectionFlagAt100cm++;
+        if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm)
+            lDetectionFlagAt150cm++;                        
+    }
+    else
+    {
+        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm)
+            rDetectionFlagAt50cm++;
+        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm)
+            rDetectionFlagAt100cm++;
+         if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm)
+            rDetectionFlagAt150cm++;                       
+    }
+
+
+    sensors[y].pdetectedAt50cm = sensors[y].detectedAt50cm;
+    sensors[y].pdetectedAt100cm = sensors[y].detectedAt100cm;
+    sensors[y].pdetectedAt150cm = sensors[y].detectedAt150cm;
+
+//ypos = ypos+15;
 
     } 
 
+if (lDetectionFlagAt50cm >= 2)
+    passedLeftAt50++;
+if (lDetectionFlagAt100cm >= 2)
+    passedLeftAt100++;
+if (lDetectionFlagAt150cm >= 2)
+    passedLeftAt150++;    
 
+if (rDetectionFlagAt50cm >= 2)
+    passedRightAt50++;
+if (rDetectionFlagAt100cm >= 2)
+    passedRightAt100++;
+if (rDetectionFlagAt150cm >= 2)
+    passedRightAt150++;    
 
-
-ypos = 15;
-ThisThread::sleep_for(300ms);
+//printf("pass %d %d\n",passedLeftAt50, passedRightAt50);
+lDetectionFlagAt50cm = 0;
+lDetectionFlagAt100cm = 0;
+lDetectionFlagAt150cm = 0;
+rDetectionFlagAt50cm = 0;
+rDetectionFlagAt100cm = 0;
+rDetectionFlagAt150cm = 0;
+//ypos = 15;
+ThisThread::sleep_for(200ms); ///may be edited to adjust scanning frequency
 }
     
+}
+void printMeasurements(){
+    while(1)
+    {
+    char cm[10];
+    BSP_LCD_SetFont(&Font12);
+    int16_t xpos = -179;
+    for (int sens=0;sens<numberOfSensors;sens++){
+    sprintf((char*)cm, "  %d  ", sensors[sens].avgSensorData);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(xpos, 259, (uint8_t *)&cm, CENTER_MODE); 
+    xpos = xpos + 52;
+    }
+
+    sprintf((char*)cm, "  %d  ", passedLeftAt50);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-222, 205, (uint8_t *)&cm, CENTER_MODE); 
+    sprintf((char*)cm, "  %d  ", passedLeftAt100);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-222, 190, (uint8_t *)&cm, CENTER_MODE); 
+    sprintf((char*)cm, "  %d  ", passedLeftAt150);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-222, 175, (uint8_t *)&cm, CENTER_MODE); 
+
+    sprintf((char*)cm, "  %d  ", passedRightAt50);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 205, (uint8_t *)&cm, CENTER_MODE); 
+    sprintf((char*)cm, "  %d  ", passedRightAt100);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 190, (uint8_t *)&cm, CENTER_MODE); 
+    sprintf((char*)cm, "  %d  ", passedRightAt150);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 175, (uint8_t *)&cm, CENTER_MODE); 
+
+    //BSP_LCD_FillRect(39, 31, 402, 200);
+
+
+int result = 0 + (sensors[0].avgSensorData - 0) * 200 / 2500;
+//100
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    BSP_LCD_FillRect(39, 31, 38, 200-result);      
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+    BSP_LCD_FillRect(39, 231-result, 38, result); 
+
+    ThisThread::sleep_for(200ms);
+}
 }
 
 int main()
@@ -379,7 +488,9 @@ BSP_LCD_DrawBitmap(0, 0, (uint8_t *)gl_file);
  for (int i=0;i<8;i++){
  thread[sensorNumber[i]].start(callback(getROIData,&sensorNumber[i]));
 
- printLCD.start(callback(printDetectedPeople));
+ countPeopleThread.start(callback(countPeople));
+ printMeasurementsThread.start(callback(printMeasurements));
+
  }
 
 
