@@ -79,6 +79,8 @@ int sensorNumber[numberOfSensors]{0, 1, 2, 3, 4, 5, 6, 7};
 uint8_t timingBudgetInMs = 20;
 uint8_t shortDistanceMode = 2; //short distance mode can be made with 15ms budget and sleep delay under 15/10ms but only to 1.3/1.5m distance
 uint8_t text[numberOfSensors][30];
+int linearLocation = 0;
+uint16_t xDist= 39;
 //480x272 lcd size two modes, linear scheme vs avg with sensor displayeed
 //detecting people based on measuring time of short distance per sensor
  void checkaddrs(){
@@ -152,27 +154,25 @@ void getROIData(int* i)
                 {
                     sensors[*i].internalTimer1.start();
                     sensors[*i].timerRunning[0] = 1;
-                    sensors[*i].dist50cm = 0;
+                    
                 }
             }
-            else
-            {
                 if (sensors[*i].timerRunning[0] == 1)
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) <= 1500  && sensors[*i].dist50cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) <= 2000  && sensors[*i].dist50cm <= 1)
                     {
                         sensors[*i].detectedAt50cm++;
                         sensors[*i].internalTimer1.stop();
                         sensors[*i].internalTimer1.reset();
                         sensors[*i].timerRunning[0] = 0;
                     }
-                    else if ((sensors[*i].timerRunning[0] = 1 && (duration_cast<std::chrono::milliseconds>( sensors[*i].internalTimer1.elapsed_time()).count()) > 1500))
+                    else if (duration_cast<std::chrono::milliseconds>( sensors[*i].internalTimer1.elapsed_time()).count() > 2000)
                     {
                         sensors[*i].internalTimer1.stop();
                         sensors[*i].internalTimer1.reset();
                         sensors[*i].timerRunning[0] = 0;
                     }
-                }
+                
                                    
             }
 
@@ -182,27 +182,26 @@ void getROIData(int* i)
                 {
                     sensors[*i].internalTimer2.start();
                     sensors[*i].timerRunning[1] = 1;
-                    sensors[*i].dist100cm = 0;
+                    
                 }
             }
-            else
-            {
+
                 if (sensors[*i].timerRunning[1] == 1 )
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) <= 1500 && sensors[*i].dist100cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) <= 2000 && sensors[*i].dist100cm <= 1)
                     {
                         sensors[*i].detectedAt100cm++;
                          sensors[*i].internalTimer2.stop();
                         sensors[*i].internalTimer2.reset();
                         sensors[*i].timerRunning[1] = 0;
                     }
-                    else if ((sensors[*i].timerRunning[1] = 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) > 1500))
+                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count() > 2000)
                     {
                         sensors[*i].internalTimer2.stop();
                         sensors[*i].internalTimer2.reset();
                         sensors[*i].timerRunning[1] = 0;
                     }
-                }
+                
 
             }
 
@@ -212,27 +211,26 @@ void getROIData(int* i)
                 {
                     sensors[*i].internalTimer3.start();
                     sensors[*i].timerRunning[2] = 1;
-                    sensors[*i].dist150cm = 0;
+                    
                 }
             }
-            else
-            {
+
                 if (sensors[*i].timerRunning[2] == 1 )
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) <= 1500 && sensors[*i].dist150cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) <= 2000 && sensors[*i].dist150cm <= 1)
                     {
                         sensors[*i].detectedAt150cm++;
                         sensors[*i].internalTimer3.stop();
                         sensors[*i].internalTimer3.reset();
                         sensors[*i].timerRunning[2] = 0;
                     }
-                    else if ((sensors[*i].timerRunning[2] = 1 && (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) > 1500))
+                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count() > 2000)
                     {
                         sensors[*i].internalTimer3.stop();
                         sensors[*i].internalTimer3.reset();
                         sensors[*i].timerRunning[2] = 0;
                     }
-                }
+                
 
             }
 
@@ -346,24 +344,25 @@ sensors[i].obj->vl53l1x_start_ranging();
 }
 
 void countPeople(){
-    /*char cm[10];
+   /* char cm[10];
     int ypos = 15;
     
     BSP_LCD_DisplayStringAt(0, 0, (uint8_t *)"50cm", LEFT_MODE); 
     BSP_LCD_DisplayStringAt(100, 0, (uint8_t *)"100cm", LEFT_MODE); 
     BSP_LCD_DisplayStringAt(200, 0, (uint8_t *)"150cm", LEFT_MODE); 
     */
+    
 while(1){
     for (int y=0;y<8;y++){
-/*
-    sprintf((char*)cm, "%d", sensors[y].detectedAt50cm); //detectedat
+
+    /*sprintf((char*)cm, "%d", sensors[y].detectedAt50cm); //detectedat
     BSP_LCD_DisplayStringAt(0, ypos, (uint8_t *)&cm, LEFT_MODE); 
     sprintf((char*)cm, "%d", sensors[y].detectedAt100cm);
     BSP_LCD_DisplayStringAt(100, ypos, (uint8_t *)&cm, LEFT_MODE); 
     sprintf((char*)cm, "%d", sensors[y].detectedAt150cm);
     BSP_LCD_DisplayStringAt(200, ypos, (uint8_t *)&cm, LEFT_MODE); 
-
 */
+
     if ( y < 4)
     {
         if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm)
@@ -394,16 +393,16 @@ while(1){
 
 if (lDetectionFlagAt50cm >= 2)
     passedLeftAt50++;
-if (lDetectionFlagAt100cm >= 2)
+else if (lDetectionFlagAt100cm >= 2)
     passedLeftAt100++;
-if (lDetectionFlagAt150cm >= 2)
+else if (lDetectionFlagAt150cm >= 2)
     passedLeftAt150++;    
 
 if (rDetectionFlagAt50cm >= 2)
     passedRightAt50++;
-if (rDetectionFlagAt100cm >= 2)
+else if (rDetectionFlagAt100cm >= 2)
     passedRightAt100++;
-if (rDetectionFlagAt150cm >= 2)
+else if (rDetectionFlagAt150cm >= 2)
     passedRightAt150++;    
 
 //printf("pass %d %d\n",passedLeftAt50, passedRightAt50);
@@ -424,37 +423,51 @@ void printMeasurements(){
     char cm[10];
     BSP_LCD_SetFont(&Font12);
     int16_t xpos = -179;
+    xDist = 39;
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     for (int sens=0;sens<numberOfSensors;sens++){
+        
     sprintf((char*)cm, "  %d  ", sensors[sens].avgSensorData);//sensors[y].detectedAt50cm); //detectedat
     BSP_LCD_DisplayStringAt(xpos, 259, (uint8_t *)&cm, CENTER_MODE); 
+
+        linearLocation = 0 + (sensors[sens].avgSensorData - 0) * 200 / 2600;
+        if (linearLocation>=200)
+            linearLocation = 200;
+        if (sensors[sens].avgSensorData < 3000){
+        BSP_LCD_SetTextColor(LCD_COLOR_RED);
+        BSP_LCD_FillRect(xDist, 31, 38, 200-linearLocation);      
+        BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+         BSP_LCD_FillRect(xDist, 231-linearLocation, 38, linearLocation); 
+        }
+    xDist = xDist + 52;
     xpos = xpos + 52;
     }
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    sprintf((char*)cm, "%d", passedLeftAt50);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-221, 195, (uint8_t *)&cm, CENTER_MODE); 
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+    sprintf((char*)cm, "%d", passedLeftAt100);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-221, 171, (uint8_t *)&cm, CENTER_MODE); 
+    BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+    sprintf((char*)cm, "%d", passedLeftAt150);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(-221, 147, (uint8_t *)&cm, CENTER_MODE); 
 
-    sprintf((char*)cm, "  %d  ", passedLeftAt50);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(-222, 205, (uint8_t *)&cm, CENTER_MODE); 
-    sprintf((char*)cm, "  %d  ", passedLeftAt100);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(-222, 190, (uint8_t *)&cm, CENTER_MODE); 
-    sprintf((char*)cm, "  %d  ", passedLeftAt150);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(-222, 175, (uint8_t *)&cm, CENTER_MODE); 
-
-    sprintf((char*)cm, "  %d  ", passedRightAt50);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(225, 205, (uint8_t *)&cm, CENTER_MODE); 
-    sprintf((char*)cm, "  %d  ", passedRightAt100);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(225, 190, (uint8_t *)&cm, CENTER_MODE); 
-    sprintf((char*)cm, "  %d  ", passedRightAt150);//sensors[y].detectedAt50cm); //detectedat
-    BSP_LCD_DisplayStringAt(225, 175, (uint8_t *)&cm, CENTER_MODE); 
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    sprintf((char*)cm, "%d", passedRightAt50);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 195, (uint8_t *)&cm, CENTER_MODE);
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW); 
+    sprintf((char*)cm, "%d", passedRightAt100);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 171, (uint8_t *)&cm, CENTER_MODE); 
+    BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+    sprintf((char*)cm, "%d", passedRightAt150);//sensors[y].detectedAt50cm); //detectedat
+    BSP_LCD_DisplayStringAt(225, 147, (uint8_t *)&cm, CENTER_MODE); 
 
     //BSP_LCD_FillRect(39, 31, 402, 200);
 
+//result = minOutRange + (in - minInRange) * OutSize / InSize where OutSize and InSize are maxOutRange - minOutRange and maxInRange - minInRange
 
-int result = 0 + (sensors[0].avgSensorData - 0) * 200 / 2500;
-//100
-    BSP_LCD_SetTextColor(LCD_COLOR_RED);
-    BSP_LCD_FillRect(39, 31, 38, 200-result);      
-    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-    BSP_LCD_FillRect(39, 231-result, 38, result); 
 
-    ThisThread::sleep_for(200ms);
+    ThisThread::sleep_for(100ms);
 }
 }
 
