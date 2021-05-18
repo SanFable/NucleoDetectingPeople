@@ -15,7 +15,9 @@
 VL53L1X_DevI2C *device_i2c = new VL53L1X_DevI2C(VL53L1_I2C_SDA, VL53L1_I2C_SCL);
 const uint8_t numberOfSensors = 8;
 Timer t;
-
+Timer detectionTimer;
+bool detectionBoolflag = 0;
+int saveDelay = 0;
 struct Sensor{
 DigitalOut *xshutdown;
 PinName interrupt;
@@ -28,7 +30,6 @@ uint16_t sensorData[2][1000]{0};
 uint32_t timestampData[2][1000]{0};
 uint8_t whichArray = 0;
 uint16_t numofData = 0;
-
 uint16_t avgSensorData;
 uint16_t dist150cm = 0;
 uint16_t dist100cm = 0;
@@ -46,7 +47,7 @@ uint16_t pdetectedAt150cm = 0;
 
 };
 
-
+uint32_t totalNumOfData = 0;
 uint8_t lDetectionFlagAt50cm = 0;
 uint8_t lDetectionFlagAt100cm = 0;
 uint8_t lDetectionFlagAt150cm = 0;
@@ -105,6 +106,7 @@ void getROIData(int* i)
     {
         sensors[*i].obj->VL53L1X_SetROICenter(roiArray[zoneMeasured]);
         // wait_us(20000);
+        totalNumOfData++;
         ThisThread::sleep_for(25ms);
         while (!sensors[*i].isDataReady)
         {
@@ -157,16 +159,19 @@ void getROIData(int* i)
                     
                 }
             }
+
+           // printf("%lld sen0\n", duration_cast<std::chrono::milliseconds>( sensors[0].internalTimer1.elapsed_time()).count());
+            //printf("%lld sen1\n", duration_cast<std::chrono::milliseconds>( sensors[1].internalTimer1.elapsed_time()).count());
                 if (sensors[*i].timerRunning[0] == 1)
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) <= 2000  && sensors[*i].dist50cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer1.elapsed_time()).count()) <= 1500  && sensors[*i].dist50cm <= 1)
                     {
                         sensors[*i].detectedAt50cm++;
                         sensors[*i].internalTimer1.stop();
                         sensors[*i].internalTimer1.reset();
                         sensors[*i].timerRunning[0] = 0;
                     }
-                    else if (duration_cast<std::chrono::milliseconds>( sensors[*i].internalTimer1.elapsed_time()).count() > 2000)
+                    else if (duration_cast<std::chrono::milliseconds>( sensors[*i].internalTimer1.elapsed_time()).count() > 1500)
                     {
                         sensors[*i].internalTimer1.stop();
                         sensors[*i].internalTimer1.reset();
@@ -188,14 +193,14 @@ void getROIData(int* i)
 
                 if (sensors[*i].timerRunning[1] == 1 )
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) <= 2000 && sensors[*i].dist100cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count()) <= 1500 && sensors[*i].dist100cm <= 1)
                     {
                         sensors[*i].detectedAt100cm++;
                          sensors[*i].internalTimer2.stop();
                         sensors[*i].internalTimer2.reset();
                         sensors[*i].timerRunning[1] = 0;
                     }
-                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count() > 2000)
+                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer2.elapsed_time()).count() > 1500)
                     {
                         sensors[*i].internalTimer2.stop();
                         sensors[*i].internalTimer2.reset();
@@ -217,14 +222,14 @@ void getROIData(int* i)
 
                 if (sensors[*i].timerRunning[2] == 1 )
                 {
-                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) <= 2000 && sensors[*i].dist150cm <= 1)
+                    if ((duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count()) <= 1500 && sensors[*i].dist150cm <= 1)
                     {
                         sensors[*i].detectedAt150cm++;
                         sensors[*i].internalTimer3.stop();
                         sensors[*i].internalTimer3.reset();
                         sensors[*i].timerRunning[2] = 0;
                     }
-                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count() > 2000)
+                    else if (duration_cast<std::chrono::milliseconds>(sensors[*i].internalTimer3.elapsed_time()).count() > 1500)
                     {
                         sensors[*i].internalTimer3.stop();
                         sensors[*i].internalTimer3.reset();
@@ -301,12 +306,33 @@ fflush(stdout);
 
 // to be fixed, not working https://pastebin.com/ELC0xZ2D?fbclid=IwAR11s8d0CJJjr92JyfcjjN4ijSGyIBvdspw5xam4VJXA4PKULnvLORB5IKA
 }
+void SavePassedPeopleToSD(){
+int err = 0;
+fflush(stdout);
+    
 
+    f = fopen("/fs/passedPeople.txt", "a");
+            fflush(stdout);
+            err = fprintf(f,"%llu, %d,%d,%d,%d,%d,%d\n", duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count(), passedLeftAt50, passedLeftAt100, passedLeftAt150, passedRightAt50, passedRightAt100, passedRightAt100);
+            if (err < 0) {
+                printf("saveFailed\n");
+            }
+    printf("Closing \"/fs/passedPeople.txt\"\n");
+    fflush(stdout);
+    if (fclose(f)) {
+        printf("closingFail\n");
+    }
+
+
+
+// to be fixed, not working https://pastebin.com/ELC0xZ2D?fbclid=IwAR11s8d0CJJjr92JyfcjjN4ijSGyIBvdspw5xam4VJXA4PKULnvLORB5IKA
+}
 
 void checkForSDWrite(){
     uint8_t lastWhichArray[8] ={sensors[0].whichArray, sensors[1].whichArray, sensors[2].whichArray, sensors[3].whichArray, 
                                 sensors[4].whichArray, sensors[5].whichArray, sensors[6].whichArray, sensors[7].whichArray};
     while(1){
+        saveDelay++;
         printf("checking for write\n");
         for (int i = 0; i<numberOfSensors; i++){           
             if (lastWhichArray[i] != sensors[i].whichArray){
@@ -314,7 +340,10 @@ void checkForSDWrite(){
                 lastWhichArray[i] = sensors[i].whichArray;
                 
             }
-        
+        }
+        if (saveDelay == 4){
+        SavePassedPeopleToSD();
+        saveDelay = 0 ;
         }
 ThisThread::sleep_for(3s);
     }
@@ -323,6 +352,8 @@ ThisThread::sleep_for(3s);
 
 void cleanUpSD(){
     char fileToRemoveName[10];
+            fflush(stdout);
+        fileSystem.remove("/passedPeople.txt");
         for (int i=0;i<numberOfSensors;i++){
         fflush(stdout);
         sprintf(fileToRemoveName, "/%d.txt", i);
@@ -365,21 +396,55 @@ while(1){
 
     if ( y < 4)
     {
-        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm)
+        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }
             lDetectionFlagAt50cm++;
-        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm)
+        }
+        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }           
             lDetectionFlagAt100cm++;
-        if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm)
-            lDetectionFlagAt150cm++;                        
+        }
+        if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }             
+            lDetectionFlagAt150cm++;      
+        }
+                              
     }
     else
     {
-        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm)
-            rDetectionFlagAt50cm++;
-        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm)
-            rDetectionFlagAt100cm++;
-         if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm)
-            rDetectionFlagAt150cm++;                       
+        if(sensors[y].pdetectedAt50cm != sensors[y].detectedAt50cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }   
+            rDetectionFlagAt50cm++;      
+        }
+            
+        if(sensors[y].pdetectedAt100cm != sensors[y].detectedAt100cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }
+             rDetectionFlagAt100cm++;           
+        }
+           
+         if(sensors[y].pdetectedAt150cm != sensors[y].detectedAt150cm){
+            if (detectionBoolflag == 0){
+                detectionTimer.start();
+                detectionBoolflag = 1;
+            }  
+            rDetectionFlagAt150cm++;                
+         }
+                              
     }
 
 
@@ -390,6 +455,10 @@ while(1){
 //ypos = ypos+15;
 
     } 
+
+
+
+if (detectionBoolflag == 1 && duration_cast<std::chrono::milliseconds>(detectionTimer.elapsed_time()).count() > 1500){
 
 if (lDetectionFlagAt50cm >= 2)
     passedLeftAt50++;
@@ -403,15 +472,24 @@ if (rDetectionFlagAt50cm >= 2)
 else if (rDetectionFlagAt100cm >= 2)
     passedRightAt100++;
 else if (rDetectionFlagAt150cm >= 2)
-    passedRightAt150++;    
+    passedRightAt150++; 
 
-//printf("pass %d %d\n",passedLeftAt50, passedRightAt50);
 lDetectionFlagAt50cm = 0;
 lDetectionFlagAt100cm = 0;
 lDetectionFlagAt150cm = 0;
 rDetectionFlagAt50cm = 0;
 rDetectionFlagAt100cm = 0;
 rDetectionFlagAt150cm = 0;
+
+detectionTimer.stop();
+detectionTimer.reset();
+detectionBoolflag = 0;
+}
+
+   
+
+//printf("pass %d %d\n",passedLeftAt50, passedRightAt50);
+
 //ypos = 15;
 ThisThread::sleep_for(200ms); ///may be edited to adjust scanning frequency
 }
@@ -424,6 +502,13 @@ void printMeasurements(){
     BSP_LCD_SetFont(&Font12);
     int16_t xpos = -179;
     xDist = 39;
+    //BSP_LCD_SetFont(&Font16);
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    sprintf((char*)cm, "%llu s", duration_cast<std::chrono::seconds>(t.elapsed_time()).count());
+    BSP_LCD_DisplayStringAt(0, 3, (uint8_t *)&cm, LEFT_MODE); 
+
+     sprintf((char*)cm, "%u M.", totalNumOfData/8);
+    BSP_LCD_DisplayStringAt(0, 3, (uint8_t *)&cm, RIGHT_MODE);    
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     for (int sens=0;sens<numberOfSensors;sens++){
         
@@ -434,7 +519,7 @@ void printMeasurements(){
         if (linearLocation>=200)
             linearLocation = 200;
         if (sensors[sens].avgSensorData < 3000){
-        BSP_LCD_SetTextColor(LCD_COLOR_RED);
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
         BSP_LCD_FillRect(xDist, 31, 38, 200-linearLocation);      
         BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
          BSP_LCD_FillRect(xDist, 231-linearLocation, 38, linearLocation); 
