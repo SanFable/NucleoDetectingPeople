@@ -303,8 +303,6 @@ fflush(stdout);
     }
 
 
-
-// to be fixed, not working https://pastebin.com/ELC0xZ2D?fbclid=IwAR11s8d0CJJjr92JyfcjjN4ijSGyIBvdspw5xam4VJXA4PKULnvLORB5IKA
 }
 void SavePassedPeopleToSD(){
 int err = 0;
